@@ -5,15 +5,17 @@ import java.util.Map;
 import java.util.Scanner;
 
 import br.com.compass.model.Usuario;
+import br.com.compass.service.BancoService;
 
 public class App {
 	
+	
 	 private static final Map<String, Usuario> usuarios = new HashMap<>();
 	 private static final Map<Long, Double> saldos = new HashMap<>(); 
+	 private static final BancoService bancoService = BancoService.getInstance();
     
     public static void main(String[] args) {
         Scanner scanner = new Scanner(System.in);
-        seedUsers(); // Usuários de exemplo (simulação de banco de dados)
 
         mainMenu(scanner);
 
@@ -44,8 +46,7 @@ public class App {
                           System.out.println("Invalid credentials. Please try again.");
                       }
                 case 2:
-                    // ToDo...
-                    System.out.println("Account Opening.");
+                	abrirConta(scanner);
                     break;
                 case 0:
                     running = false;
@@ -102,6 +103,7 @@ public class App {
         }
     }
 
+
     public static void bankMenu(Scanner scanner) {
         boolean running = true;
 
@@ -117,36 +119,47 @@ public class App {
             System.out.print("Choose an option: ");
 
             int option = scanner.nextInt();
+            scanner.nextLine(); // Consumir quebra de linha
 
             switch (option) {
                 case 1:
-                    // ToDo...
-                    System.out.println("Deposit.");
+                    deposit(scanner);
                     break;
                 case 2:
-                    // ToDo...
-                    System.out.println("Withdraw.");
+                    withdraw(scanner);
                     break;
                 case 3:
-                    // ToDo...
-                    System.out.println("Check Balance.");
+                    checkBalance(scanner);
                     break;
                 case 4:
-                    // ToDo...
-                    System.out.println("Transfer.");
+                    transfer(scanner);
                     break;
                 case 5:
-                    // ToDo...
-                    System.out.println("Bank Statement.");
+                    bankStatement(scanner);
                     break;
                 case 0:
-                    // ToDo...
-                    System.out.println("Exiting...");
+                    System.out.println("Exiting Bank Menu...");
                     running = false;
-                    return;
+                    break;
                 default:
                     System.out.println("Invalid option! Please try again.");
             }
+        }
+    }
+
+    public static void deposit(Scanner scanner) {
+        System.out.println("========= Deposit =========");
+        System.out.print("Enter your account ID: ");
+        Long accountId = scanner.nextLong();
+
+        System.out.print("Enter the amount to deposit: ");
+        double amount = scanner.nextDouble();
+
+        try {
+            bancoService.depositar(accountId, amount);
+            System.out.printf("Deposit successful! New balance: %.2f%n", bancoService.consultarSaldo(accountId));
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
         }
     }
 
@@ -155,29 +168,68 @@ public class App {
         System.out.print("Enter your account ID: ");
         Long accountId = scanner.nextLong();
 
+        System.out.print("Enter the amount to withdraw: ");
+        double amount = scanner.nextDouble();
+
+        try {
+            bancoService.sacar(accountId, amount);
+            System.out.printf("Withdrawal successful! New balance: %.2f%n", bancoService.consultarSaldo(accountId));
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public static void checkBalance(Scanner scanner) {
+        System.out.println("========= Check Balance =========");
+        System.out.print("Enter your account ID: ");
+        Long accountId = scanner.nextLong();
+
+        try {
+            double saldo = bancoService.consultarSaldo(accountId);
+            System.out.printf("Your current balance is: %.2f%n", saldo);
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public static void transfer(Scanner scanner) {
+        System.out.println("========= Transfer =========");
+        System.out.print("Enter your account ID: ");
+        Long sourceAccountId = scanner.nextLong();
+
+        System.out.print("Enter the destination account ID: ");
+        Long destinationAccountId = scanner.nextLong();
+
+        System.out.print("Enter the amount to transfer: ");
+        double amount = scanner.nextDouble();
+
+        try {
+            bancoService.transferir(sourceAccountId, destinationAccountId, amount);
+            System.out.printf("Transfer successful! New balance of account %d: %.2f%n",
+                    sourceAccountId, bancoService.consultarSaldo(sourceAccountId));
+            System.out.printf("New balance of account %d: %.2f%n",
+                    destinationAccountId, bancoService.consultarSaldo(destinationAccountId));
+        } catch (IllegalArgumentException e) {
+            System.out.println(e.getMessage());
+        }
+    }
+
+    public static void bankStatement(Scanner scanner) {
+        System.out.println("========= Bank Statement =========");
+        System.out.print("Enter your account ID: ");
+        Long accountId = scanner.nextLong();
+        bancoService.consultarSaldo(accountId);
+        
         if (!saldos.containsKey(accountId)) {
             System.out.println("Account not found!");
             return;
         }
 
-        System.out.print("Enter the amount to withdraw: ");
-        double amount = scanner.nextDouble();
-
-        if (amount <= 0) {
-            System.out.println("Invalid amount. Please enter a positive value.");
-            return;
-        }
-
-        double currentBalance = saldos.get(accountId);
-        if (amount > currentBalance) {
-            System.out.println("Insufficient funds.");
-            return;
-        }
-
-        saldos.put(accountId, currentBalance - amount);
-        System.out.printf("Withdrawal successful! New balance: %.2f%n", saldos.get(accountId));
+        System.out.printf("Your account balance is: %.2f%n", saldos.get(accountId));
+        System.out.println("Additional transaction details can be added later.");
     }
 
+/*
     private static void seedUsers() {
         // Criando usuários
         Usuario usuario1 = new Usuario("Alice", "12345678901", null, 999999999L, 1L, "senha123");
@@ -188,5 +240,5 @@ public class App {
         // Criando saldos iniciais para as contas
         saldos.put(1L, 5000.00); // Saldo da conta 1
         saldos.put(2L, 10000.00); // Saldo da conta 2
-    }
+    }*/
 }

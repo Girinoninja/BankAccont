@@ -1,14 +1,43 @@
 package br.com.compass.service;
 
+import br.com.compass.Validador;
 import br.com.compass.model.Usuario;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class UsuarioService {
     private static final String URL = "jdbc:postgresql://127.0.0.1:5432/meubanco";
     private static final String USER = "postgres";
     private static final String PASSWORD = "root";
+    private Map<String, Usuario> usuarios;
+
+    public UsuarioService(Map<String, Usuario> usuarios) {
+        this.usuarios = usuarios;
+    }
+
+    public boolean autenticar(String cpfCnpj, String senha) {
+        if (!Validador.validarCPF(cpfCnpj) && !Validador.validarCNPJ(cpfCnpj)) {
+            System.out.println("Invalid CPF or CNPJ format.");
+            return false;
+        }
+
+        Usuario usuario = usuarios.get(cpfCnpj);
+        return usuario != null && usuario.getSenha().equals(senha);
+    }
+
+    public void criarConta(String cpfCnpj, String nome, String senha) {
+        if (usuarios.containsKey(cpfCnpj)) {
+            System.out.println("User with this CPF or CNPJ already exists.");
+            return;
+        }
+
+        Usuario usuario = new Usuario(nome, cpfCnpj, null, null, null, senha);
+        usuarios.put(cpfCnpj, usuario);
+        System.out.println("Account created successfully for " + nome);
+    }
+
 
     public void criarUsuario(Usuario usuario) throws SQLException {
         String sql = "INSERT INTO Usuario (nome, data_nascimento, cpf, telefone, senha) VALUES (?, ?, ?, ?, ?)";
