@@ -1,69 +1,64 @@
 package br.com.compass.service;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.math.BigDecimal;
+import java.sql.SQLException;
+
+import br.com.compass.dao.ContaDAO;
 
 public class BancoService {
-    private static BancoService instance = null;
-    private final Map<Long, Double> saldos = new HashMap<>();
+    private static final BancoService instance = new BancoService();
+    private final ContaDAO contaDAO = new ContaDAO();
 
-    // Construtor privado para Singleton
     private BancoService() {}
 
-    // Método para obter a instância única
     public static BancoService getInstance() {
-        if (instance == null) {
-            instance = new BancoService();
-        }
         return instance;
     }
 
-    public void depositar(Long accountId, double amount) {
-        if (amount <= 0) {
-            System.out.println("Amount should be positive.");
-            return;
+    public void deposit(Long accountId, BigDecimal amount) throws SQLException {
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Deposit amount must be greater than zero.");
         }
 
-        saldos.put(accountId, saldos.getOrDefault(accountId, 0.0) + amount);
-        System.out.printf("Deposit successful! New balance: %.2f%n", saldos.get(accountId));
+        BigDecimal currentBalance = contaDAO.buscarSaldo(accountId.intValue());
+        BigDecimal newBalance = currentBalance.add(amount);
+
+        contaDAO.atualizarSaldo(accountId.intValue(), newBalance);
+
+        System.out.printf("Deposit successful! New balance: %.2f%n", newBalance);
     }
 
-    public void sacar(Long accountId, double amount) {
-        if (amount <= 0) {
-            System.out.println("Amount should be positive.");
-            return;
+    public void withdraw(Long accountId, BigDecimal amount) throws SQLException {
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Withdraw amount must be greater than zero.");
         }
 
-        double currentBalance = saldos.getOrDefault(accountId, 0.0);
-        if (amount > currentBalance) {
-            System.out.println("Insufficient funds.");
-            return;
+        BigDecimal currentBalance = contaDAO.buscarSaldo(accountId.intValue());
+        if (amount.compareTo(currentBalance) > 0) {
+            throw new IllegalArgumentException("Insufficient funds.");
         }
 
-        saldos.put(accountId, currentBalance - amount);
-        System.out.printf("Withdrawal successful! New balance: %.2f%n", saldos.get(accountId));
+        BigDecimal newBalance = currentBalance.subtract(amount);
+        contaDAO.atualizarSaldo(accountId.intValue(), newBalance);
+
+        System.out.printf("Withdrawal successful! New balance: %.2f%n", newBalance);
     }
 
-    public double consultarSaldo(Long accountId) {
-        System.out.printf("Current balance: %.2f%n", saldos.getOrDefault(accountId, 0.0));
-		return accountId;
-    }
-
-    public void transferir(Long sourceAccountId, Long destinationAccountId, double amount) {
-        if (amount <= 0) {
-            System.out.println("Amount should be positive.");
-            return;
+    public void transfer(Long sourceAccountId, Long destinationAccountId, BigDecimal amount) throws SQLException {
+        if (amount.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Transfer amount must be greater than zero.");
         }
 
-        double sourceBalance = saldos.getOrDefault(sourceAccountId, 0.0);
-        if (amount > sourceBalance) {
-            System.out.println("Insufficient funds.");
-            return;
+        BigDecimal sourceBalance = contaDAO.buscarSaldo(sourceAccountId.intValue());
+        if (amount.compareTo(sourceBalance) > 0) {
+            throw new IllegalArgumentException("Insufficient funds in source account.");
         }
 
-        saldos.put(sourceAccountId, sourceBalance - amount);
-        saldos.put(destinationAccountId, saldos.getOrDefault(destinationAccountId, 0.0) + amount);
-        System.out.printf("Transfer successful! Source account balance: %.2f, Destination account balance: %.2f%n", 
-                          saldos.get(sourceAccountId), saldos.get(destinationAccountId));
+        BigDecimal destinationBalance = contaDAO.buscarSaldo(destinationAccountId.intValue());
+
+        contaDAO.atualizarSaldo(sourceAccountId.intValue(), sourceBalance.subtract(amount));
+        contaDAO.atualizarSaldo(destinationAccountId.intValue(), destinationBalance.add(amount));
+
+        System.out.println("Transfer completed successfully!");
     }
 }
