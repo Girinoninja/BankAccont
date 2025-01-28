@@ -135,9 +135,6 @@ public class App {
 				        break;
 				    case 3:
 				        checkBalance(scanner);
-				        break;
-				    case 4:
-				        transfer(scanner);
 				        System.out.print("Enter your account ID: ");
 				        int accountId = scanner.nextInt();
 				        scanner.nextLine(); // Consumir quebra de linha restante
@@ -156,6 +153,9 @@ public class App {
 				        } else {
 				            System.out.println("Transactions in the selected period: " + transacoesPeriodo);
 				        }
+				        break;
+				    case 4:
+				        transfer(scanner);
 
 				        break;
 				    case 5:
